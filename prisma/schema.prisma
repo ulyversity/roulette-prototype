@@ -1,0 +1,81 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model GamePlayers {
+  ID       Int   @id @default(autoincrement())
+  gameID   Int
+  playerID Int
+  start    Int
+  slots    Int
+  Games    Games @relation(fields: [gameID], references: [ID], onDelete: NoAction, onUpdate: NoAction, map: "FK_GamePlayers_Game")
+  Users    Users @relation(fields: [playerID], references: [ID], onDelete: NoAction, onUpdate: NoAction, map: "FK_GamePlayers_User")
+
+  @@index([gameID], map: "FK_GamePlayers_Game")
+  @@index([playerID], map: "FK_GamePlayers_User")
+}
+
+model Games {
+  ID          Int           @id @default(autoincrement())
+  timeCreated DateTime      @db.DateTime(0)
+  timeSettled DateTime?     @db.DateTime(0)
+  winner      Int?
+  slotPicked  Int?
+  GamePlayers GamePlayers[]
+  Users       Users?        @relation(fields: [winner], references: [ID], onDelete: NoAction, onUpdate: NoAction, map: "FK_Game_Winner")
+
+  @@index([winner], map: "FK_Game_Winner")
+}
+
+model RaffleTypes {
+  ID          Int       @id @default(autoincrement())
+  name        String    @db.VarChar(50)
+  description String?   @db.VarChar(255)
+  Raffles     Raffles[]
+}
+
+model Raffles {
+  ID           Int          @id @default(autoincrement())
+  playerID     Int
+  raffleTypeID Int?
+  RaffleTypes  RaffleTypes? @relation(fields: [raffleTypeID], references: [ID], onDelete: NoAction, onUpdate: NoAction, map: "FK_Raffle_RaffleType")
+  Users        Users        @relation(fields: [playerID], references: [ID], onDelete: NoAction, onUpdate: NoAction, map: "FK_Raffle_User")
+
+  @@index([raffleTypeID], map: "FK_Raffle_RaffleType")
+  @@index([playerID], map: "FK_Raffle_User")
+}
+
+model Roles {
+  ID    Int     @id @default(autoincrement())
+  name  String  @db.VarChar(50)
+  Users Users[]
+}
+
+model Users {
+  ID          Int           @id @default(autoincrement())
+  roleID      Int?
+  firstName   String        @db.VarChar(100)
+  lastName    String        @db.VarChar(100)
+  birthdate   DateTime?     @db.Date
+  username    String        @unique(map: "username") @db.VarChar(30)
+  password    String        @db.VarChar(255)
+  email       String?       @db.VarChar(320)
+  number      String        @db.VarChar(20)
+  totalWins   Int?          @default(0)
+  GamePlayers GamePlayers[]
+  Games       Games[]
+  Raffles     Raffles[]
+  Roles       Roles?        @relation(fields: [roleID], references: [ID], onDelete: NoAction, onUpdate: NoAction, map: "FK_Users_Role")
+
+  @@index([roleID], map: "FK_Users_Role")
+}
+
+model Slots {
+  ID    Int     @id @default(autoincrement())
+  Price Decimal @db.Decimal(15, 2)
+}
